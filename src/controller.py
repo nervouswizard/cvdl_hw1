@@ -19,6 +19,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.corners = []
         self.h = None
         self.w = None
+        self.rvecs = None
+        self.tvecs = None
 
     def setup_control(self):
         self.ui.load_folder_button.clicked.connect(self.load_folder_button_clicked)
@@ -26,6 +28,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.load_image_r_button.clicked.connect(self.load_image_r_button_clicked)
         self.ui.find_corners_button.clicked.connect(self.find_corners_button_clicked)
         self.ui.find_intrinsic_button.clicked.connect(self.find_intrinsic_button_clicked)
+        self.ui.find_extrinsic_button.clicked.connect(self.find_extrinsic_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -86,13 +89,14 @@ class MainWindow_controller(QtWidgets.QMainWindow):
 
                 show_image = cv2.drawChessboardCorners(image, (11, 8), corner, ret)
                 show_image = cv2.resize(show_image, (0, 0), fx=0.5, fy=0.5)
-                cv2.imshow("show_image", show_image)
-                print("Number of corners: ", len(corner))
 
+                print("Number of corners: ", len(corner))
+                
+                # cv2.imshow("show_image", show_image)
                 # wait for 1 second
-                cv2.waitKey(1000)
+                # cv2.waitKey(1000)
         
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
         cv2.destroyAllWindows()
 
     def find_intrinsic_button_clicked(self):
@@ -103,11 +107,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
             return
         if len(self.corners) == 0:
-            for file_name in os.listdir(self.folder_path):
-                if file_name.endswith(".bmp"):
-                    file_path = os.path.join(self.folder_path, file_name)
-                    image = cv2.imread(file_path)
-                    self._find_corners(image)
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the corners first.")
+            return
 
         objpoints = np.zeros((1, 88, 3), np.float32)
         objpoints[0,:,:2] = np.mgrid[0:11, 0:8].T.reshape(-1, 2)
@@ -124,6 +125,9 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             objpoints, self.corners, (self.w, self.h), 
             camera_matrix, dist_coeffs)
         
+        self.rvecs = rvecs
+        self.tvecs = tvecs
+
         # Format and display the intrinsic matrix
         intrinsic_matrix = np.array([
             [mtx[0,0], mtx[0,1], mtx[0,2]],  # fx, s,  cx
@@ -133,3 +137,29 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         print('\nIntrinsic:')
         print(intrinsic_matrix)
+
+    def find_extrinsic_button_clicked(self):
+        """
+        Find the extrinsic parameters of the camera.
+        """
+        if self.folder_path is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
+            return
+        if len(self.corners) == 0:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the corners first.")
+            return
+        if self.rvecs is None or self.tvecs is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the intrinsic first.")
+            return
+        
+        # From UI.find_extrinsic_spinBox get whitch number of image is selected
+        image_index = self.ui.find_extrinsic_spinBox.value()
+        if image_index < 0 or image_index >= len(self.corners):
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a valid image index.")
+            return
+        
+        # Get extrinsic matrix
+        rotation_matrix = cv2.Rodrigues(self.rvecs[image_index])[0]
+        extrinsic_matrix = np.hstack((rotation_matrix, self.tvecs[image_index]))
+        print("Extrinsic:")
+        print(extrinsic_matrix)
