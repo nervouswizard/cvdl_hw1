@@ -21,6 +21,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.load_image_l_button.clicked.connect(self.load_image_l_button_clicked)
         self.ui.load_image_r_button.clicked.connect(self.load_image_r_button_clicked)
         self.ui.find_corners_button.clicked.connect(self.find_corners_button_clicked)
+        self.ui.find_intrinsic_button.clicked.connect(self.find_intrinsic_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -82,3 +83,17 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def find_intrinsic_button_clicked(self):
+        """
+        Find the intrinsic parameters of the camera.
+        """
+        if self.folder_path is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
+            return
+        
+        # read every .bmp file in the folder
+        for file_name in os.listdir(self.folder_path):
+            if file_name.endswith(".bmp"):
+                file_path = os.path.join(self.folder_path, file_name)
+                print(file_path)
