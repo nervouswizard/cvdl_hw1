@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QGroupBox" name="load_image_box">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>30</y>
+      <width>111</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Load Image</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="load_folder_button">
+       <property name="text">
+        <string>Load Folder</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="load_image_l_button">
+       <property name="text">
+        <string>Load Image L</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="load_image_r_button">
+       <property name="text">
+        <string>Load Image R</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="calibration_box">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>60</y>
+      <width>161</width>
+      <height>241</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>1. Calibration</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QPushButton" name="find_corners_button">
+       <property name="text">
+        <string>1.1 Find corners</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="find_intrinsic_button">
+       <property name="text">
+        <string>1.2 Find intrinsic</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="find_extrinsic_box">
+       <property name="title">
+        <string>1.3 Find extrinsic</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QSpinBox" name="find_extrinsic_spinBox"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="find_extrinsic_button">
+          <property name="text">
+           <string>1.3 Find extrinsic</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="find_distortion_button">
+       <property name="text">
+        <string>1.4 Find distortion</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="show_result_button">
+       <property name="text">
+        <string>1.5 Show result</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="augment_reality_box">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>60</y>
+      <width>191</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>2. Augment Reality</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <widget class="QPushButton" name="show_words_on_borad_button">
+       <property name="text">
+        <string>2.1 show words on borad</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="show_words_vertical_button">
+       <property name="text">
+        <string>2.2 show words vertical</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="stereo_disparity_map_box">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>60</y>
+      <width>191</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>3. Stereo displarity map</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_5">
+     <item>
+      <widget class="QPushButton" name="stereo_disparity_map_button">
+       <property name="text">
+        <string>3.1 stereo disparity map</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QGroupBox" name="sift_box">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>270</y>
+      <width>181</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>4. SIFT</string>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_6">
+     <item>
+      <widget class="QPushButton" name="load_image_1_button">
+       <property name="text">
+        <string>Load Image1</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="load_image_2_button">
+       <property name="text">
+        <string>Load Image 2</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="keypoints_button">
+       <property name="text">
+        <string>4.1 Keypoints</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="matched_keypoints_button">
+       <property name="text">
+        <string>4.2 Matched Keypoints</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
