@@ -2,6 +2,7 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 
 import cv2
 import os
+import numpy as np
 
 from UI import Ui_MainWindow
 
@@ -14,7 +15,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.set_parameters()
     
     def set_parameters(self):
-        self.folder_path = 'D:/ncku/2024DL/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q1_Image'
+        self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q1_Image'
+        self.corners = []
 
     def setup_control(self):
         self.ui.load_folder_button.clicked.connect(self.load_folder_button_clicked)
@@ -46,6 +48,20 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         print(file_path)
         pass
 
+    def _find_corners(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret, corner = cv2.findChessboardCorners(gray, (11, 8))
+
+        # refine the corners
+        winSize = (5, 5)
+        zeroZone = (-1, -1)
+        criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 30, 0.001)
+        corner = cv2.cornerSubPix(gray, corner, winSize, zeroZone, criteria) 
+        print('corner:', len(corner))
+
+        self.corners.append(corner)
+        return ret, corner
+
     def find_corners_button_clicked(self):
         """
         For each image in the folder, find the corners of the chessboard in the image.
@@ -63,18 +79,10 @@ class MainWindow_controller(QtWidgets.QMainWindow):
                 file_path = os.path.join(self.folder_path, file_name)
                 print(file_path)
                 image = cv2.imread(file_path)
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-                ret, corners = cv2.findChessboardCorners(gray, (11, 8))
+                ret, corner = self._find_corners(image)
 
-                # refine the corners
-                winSize = (5, 5)
-                zeroZone = (-1, -1)
-                criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 30, 0.001)
-                corners = cv2.cornerSubPix(gray, corners, winSize, zeroZone, criteria) 
-                print('corners:', len(corners))
-                
-                show_image = cv2.drawChessboardCorners(image, (11, 8), corners, ret)
+                show_image = cv2.drawChessboardCorners(image, (11, 8), corner, ret)
                 show_image = cv2.resize(show_image, (0, 0), fx=0.5, fy=0.5)
                 cv2.imshow("show_image", show_image)
 
@@ -92,8 +100,28 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
             return
         
-        # read every .bmp file in the folder
-        for file_name in os.listdir(self.folder_path):
-            if file_name.endswith(".bmp"):
-                file_path = os.path.join(self.folder_path, file_name)
-                print(file_path)
+        # Initialize arrays to store points from all images
+        objpoints = []  # 3D points in real world space
+        
+
+        # Get image size
+        h, w = image.shape[:2]
+        
+        # Initialize camera matrix
+        camera_matrix = np.zeros((3, 3), np.float32)
+        dist_coeffs = np.zeros((5, 1), np.float32)
+        
+        # Calibrate camera
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+            objpoints, self.corners, (w, h), 
+            camera_matrix, dist_coeffs)
+        
+        # Format and display the intrinsic matrix
+        intrinsic_matrix = np.array([
+            [mtx[0,0], mtx[0,1], mtx[0,2]],  # fx, s,  cx
+            [mtx[1,0], mtx[1,1], mtx[1,2]],  # 0,  fy, cy
+            [mtx[2,0], mtx[2,1], mtx[2,2]]   # 0,  0,  1
+        ])
+        
+        print('\nIntrinsic Matrix:')
+        print(intrinsic_matrix)
