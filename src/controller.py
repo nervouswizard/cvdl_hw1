@@ -17,6 +17,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
     def set_parameters(self):
         self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q1_Image'
         self.corners = []
+        self.h = None
+        self.w = None
 
     def setup_control(self):
         self.ui.load_folder_button.clicked.connect(self.load_folder_button_clicked)
@@ -49,6 +51,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         pass
 
     def _find_corners(self, image):
+        self.h, self.w = image.shape[:2]
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         ret, corner = cv2.findChessboardCorners(gray, (11, 8))
 
@@ -57,7 +60,6 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         zeroZone = (-1, -1)
         criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 30, 0.001)
         corner = cv2.cornerSubPix(gray, corner, winSize, zeroZone, criteria) 
-        print('corner:', len(corner))
 
         self.corners.append(corner)
         return ret, corner
@@ -85,6 +87,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
                 show_image = cv2.drawChessboardCorners(image, (11, 8), corner, ret)
                 show_image = cv2.resize(show_image, (0, 0), fx=0.5, fy=0.5)
                 cv2.imshow("show_image", show_image)
+                print("Number of corners: ", len(corner))
 
                 # wait for 1 second
                 cv2.waitKey(1000)
@@ -99,13 +102,18 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         if self.folder_path is None:
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
             return
-        
-        # Initialize arrays to store points from all images
-        objpoints = []  # 3D points in real world space
-        
+        if len(self.corners) == 0:
+            for file_name in os.listdir(self.folder_path):
+                if file_name.endswith(".bmp"):
+                    file_path = os.path.join(self.folder_path, file_name)
+                    image = cv2.imread(file_path)
+                    self._find_corners(image)
 
-        # Get image size
-        h, w = image.shape[:2]
+        objpoints = np.zeros((1, 88, 3), np.float32)
+        objpoints[0,:,:2] = np.mgrid[0:11, 0:8].T.reshape(-1, 2)
+
+        # duplicate the points to match the number of corners
+        objpoints = np.repeat(objpoints, len(self.corners), axis=0)
         
         # Initialize camera matrix
         camera_matrix = np.zeros((3, 3), np.float32)
@@ -113,7 +121,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         # Calibrate camera
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-            objpoints, self.corners, (w, h), 
+            objpoints, self.corners, (self.w, self.h), 
             camera_matrix, dist_coeffs)
         
         # Format and display the intrinsic matrix
