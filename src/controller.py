@@ -131,5 +131,5 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             [mtx[2,0], mtx[2,1], mtx[2,2]]   # 0,  0,  1
         ])
         
-        print('\nIntrinsic Matrix:')
+        print('\nIntrinsic:')
         print(intrinsic_matrix)
