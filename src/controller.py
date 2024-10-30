@@ -21,6 +21,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.w = None
         self.rvecs = None
         self.tvecs = None
+        self.dist = None
 
     def setup_control(self):
         self.ui.load_folder_button.clicked.connect(self.load_folder_button_clicked)
@@ -29,6 +30,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.find_corners_button.clicked.connect(self.find_corners_button_clicked)
         self.ui.find_intrinsic_button.clicked.connect(self.find_intrinsic_button_clicked)
         self.ui.find_extrinsic_button.clicked.connect(self.find_extrinsic_button_clicked)
+        self.ui.find_distortion_button.clicked.connect(self.find_distortion_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -121,20 +123,14 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         dist_coeffs = np.zeros((5, 1), np.float32)
         
         # Calibrate camera
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+        ret, intrinsic_matrix, dist, rvecs, tvecs = cv2.calibrateCamera(
             objpoints, self.corners, (self.w, self.h), 
             camera_matrix, dist_coeffs)
         
         self.rvecs = rvecs
         self.tvecs = tvecs
+        self.dist = dist
 
-        # Format and display the intrinsic matrix
-        intrinsic_matrix = np.array([
-            [mtx[0,0], mtx[0,1], mtx[0,2]],  # fx, s,  cx
-            [mtx[1,0], mtx[1,1], mtx[1,2]],  # 0,  fy, cy
-            [mtx[2,0], mtx[2,1], mtx[2,2]]   # 0,  0,  1
-        ])
-        
         print('\nIntrinsic:')
         print(intrinsic_matrix)
 
@@ -142,9 +138,6 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         Find the extrinsic parameters of the camera.
         """
-        if self.folder_path is None:
-            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
-            return
         if len(self.corners) == 0:
             QtWidgets.QMessageBox.warning(self, "Warning", "Please find the corners first.")
             return
@@ -163,3 +156,15 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         extrinsic_matrix = np.hstack((rotation_matrix, self.tvecs[image_index]))
         print("Extrinsic:")
         print(extrinsic_matrix)
+
+    def find_distortion_button_clicked(self):
+        """
+        Find the distortion parameters of the camera.
+        """
+        if self.dist is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the intrinsic first.")
+            return
+        
+        print("Distortion:")
+        print(self.dist)
+        pass
