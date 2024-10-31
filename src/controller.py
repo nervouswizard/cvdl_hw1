@@ -75,7 +75,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         For each image in the folder, find the corners of the chessboard in the image.
         """
-        if self.folder_path is None:
+        if self.folder_path is None or self.folder_path == "":
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
             return
         
@@ -95,9 +95,9 @@ class MainWindow_controller(QtWidgets.QMainWindow):
 
             print("Number of corners: ", len(corner))
             
-            # cv2.imshow("show_image", show_image)
+            cv2.imshow("show_image", show_image)
             # wait for 1 second
-            # cv2.waitKey(1000)
+            cv2.waitKey(1000)
         
         # cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -189,8 +189,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         # Add titles to the image
         font = cv2.FONT_HERSHEY_COMPLEX
-        cv2.putText(title_image, "Undistorted image", (image.shape[1]//4, 70), font, 2.5, (255,255,255), 2)
-        cv2.putText(title_image, "Distorted image", (image.shape[1]*5//4, 70), font, 2.5, (255,255,255), 2)
+        cv2.putText(title_image, "Distorted image", (image.shape[1]//4, 70), font, 2.5, (255,255,255), 2)
+        cv2.putText(title_image, "Undistorted image", (image.shape[1]*5//4, 70), font, 2.5, (255,255,255), 2)
         
         # Combine images horizontally
         result_image = np.hstack((result_image, image))
