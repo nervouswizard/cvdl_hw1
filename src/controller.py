@@ -18,6 +18,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q2_Image'
         self.file_path_l = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imL.png'
         self.file_path_r = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imR.png'
+        self.file_path_1 = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q4_Image/Left.jpg'
+        self.file_path_2 = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q4_Image/Right.jpg'
         self.corners = []
         self.h = None
         self.w = None
@@ -26,10 +28,17 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.dist = None
         self.inst = None
         self.index = None
+        screen = QtWidgets.QApplication.primaryScreen()
+        rect = screen.availableGeometry()
+        self.screen_width = rect.width()
+        self.screen_height = rect.height()
+        
     def setup_control(self):
         self.ui.load_folder_button.clicked.connect(self.load_folder_button_clicked)
         self.ui.load_image_l_button.clicked.connect(self.load_image_l_button_clicked)
         self.ui.load_image_r_button.clicked.connect(self.load_image_r_button_clicked)
+        self.ui.load_image_1_button.clicked.connect(self.load_image_1_button_clicked)
+        self.ui.load_image_2_button.clicked.connect(self.load_image_2_button_clicked)
         self.ui.find_corners_button.clicked.connect(self.find_corners_button_clicked)
         self.ui.find_intrinsic_button.clicked.connect(self.find_intrinsic_button_clicked)
         self.ui.find_extrinsic_button.clicked.connect(self.find_extrinsic_button_clicked)
@@ -38,6 +47,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.show_words_on_borad_button.clicked.connect(self.show_words_on_borad_button_clicked)
         self.ui.show_words_vertical_button.clicked.connect(self.show_words_vertical_button_clicked)
         self.ui.stereo_disparity_map_button.clicked.connect(self.stereo_disparity_map_button_clicked)
+        self.ui.keypoints_button.clicked.connect(self.keypoints_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -50,17 +60,29 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         Use QFileDialog to open a file selection dialog and get the selected file path.
         """
-        self.file_path_l, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a left image", "", "Image files (*.png)")
+        self.file_path_l, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a left image", "", "Image files (*.jpg *.jpeg *.png)")
         print(self.file_path_l)
-        pass
 
     def load_image_r_button_clicked(self):
         """
         Use QFileDialog to open a file selection dialog and get the selected file path.
         """
-        self.file_path_r, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a right image", "", "Image files (*.png)")
+        self.file_path_r, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a right image", "", "Image files (*.jpg *.jpeg *.png)")
         print(self.file_path_r)
-        pass
+
+    def load_image_1_button_clicked(self):
+        """
+        Use QFileDialog to open a file selection dialog and get the selected file path.
+        """
+        self.file_path_1, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a image 1", "", "Image files (*.jpg *.jpeg *. png)")
+        print(self.file_path_1)
+
+    def load_image_2_button_clicked(self):
+        """
+        Use QFileDialog to open a file selection dialog and get the selected file path.
+        """
+        self.file_path_2, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a image 2", "", "Image files (*.jpg *.jpeg *. png)")
+        print(self.file_path_2)
 
     def _find_corners(self, image):
         self.h, self.w = image.shape[:2]
@@ -99,13 +121,15 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             ret, corner = self._find_corners(image)
 
             show_image = cv2.drawChessboardCorners(image, (11, 8), corner, ret)
-            show_image = cv2.resize(show_image, (0, 0), fx=0.25, fy=0.25)
+            # Calculate scale factor based on image width and height
+            scale = self._get_scale_factor(show_image.shape[1], show_image.shape[0])
+            show_image = cv2.resize(show_image, None, fx=scale, fy=scale)
 
             print("Number of corners: ", len(corner))
             
             cv2.imshow("show_image", show_image)
             # wait for 1 second
-            # cv2.waitKey(1000)
+            cv2.waitKey(1000)
         
         # cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -179,6 +203,19 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         print(self.dist)
         pass
 
+    def _get_scale_factor(self, image_width, image_height):
+        """
+        Calculate the scale factor based on both screen width and height.
+        Ensures the image will fit on screen with some margin.
+        """
+        print(self.screen_width, self.screen_height)
+        margin = 0.9  # Use 90% of screen size
+        width_scale = (self.screen_width * margin) / image_width
+        height_scale = (self.screen_height * margin) / image_height
+        
+        # Use the smaller scale factor to ensure image fits both dimensions
+        return min(width_scale, height_scale)
+
     def show_result_button_clicked(self):
         """
         Show the result of the camera calibration.
@@ -213,8 +250,11 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         # Combine title and images vertically
         final_image = np.vstack((title_image, result_image))
         
-        # Resize for display
-        final_image = cv2.resize(final_image, (0, 0), fx=0.25, fy=0.25)
+        # Calculate scale factor based on final image width and height
+        scale = self._get_scale_factor(final_image.shape[1], final_image.shape[0])
+        final_image = cv2.resize(final_image, None, fx=scale, fy=scale)
+
+        # Show the result
         cv2.imshow("Camera Calibration Result", final_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -302,8 +342,9 @@ class MainWindow_controller(QtWidgets.QMainWindow):
                 pt2 = tuple(map(int, points_2d[end_idx][0]))
                 cv2.line(image, pt1, pt2, (0, 0, 255), 20)
 
-            # resize the image
-            image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
+            # Calculate scale factor based on image width and height
+            scale = self._get_scale_factor(image.shape[1], image.shape[0])
+            image = cv2.resize(image, None, fx=scale, fy=scale)
 
             cv2.imshow("Words on Board", image)
             cv2.waitKey(1000)
@@ -374,8 +415,9 @@ class MainWindow_controller(QtWidgets.QMainWindow):
                 pt2 = tuple(map(int, points_2d[end_idx][0]))
                 cv2.line(image, pt1, pt2, (0, 0, 255), 20)
 
-            # resize the image
-            image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
+            # Calculate scale factor based on image width and height
+            scale = self._get_scale_factor(image.shape[1], image.shape[0])
+            image = cv2.resize(image, None, fx=scale, fy=scale)
 
             cv2.imshow("Words on Board", image)
             cv2.waitKey(1000)
@@ -386,7 +428,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         Show the stereo disparity map using OpenCV StereoBM.
         """
-        if self.file_path_l is None or self.file_path_l == '' or self.file_path_r is None or self.file_path_r == '':
+        if not hasattr(self, 'file_path_l') or not hasattr(self, 'file_path_r'):
             QtWidgets.QMessageBox.warning(self, "Warning", "Please load both left and right images first.")
             return
 
@@ -409,7 +451,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         disparity = stereo.compute(grayL, grayR)
 
         # Normalize the disparity map to [0, 255]
-        disparity_normalized = cv2.normalize(disparity, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        disparity_normalized = cv2.normalize(disparity, None, alpha=0, beta=255, 
+                                           norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         
         # Convert disparity map to BGR for display (keeping it grayscale)
         disparity_display = cv2.cvtColor(disparity_normalized, cv2.COLOR_GRAY2BGR)
@@ -431,12 +474,61 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         # Combine with title
         final_image = np.vstack((title_image, combined_images))
 
-        # Resize if the image is too large
-        if final_image.shape[1] > 1920:  # 假設螢幕寬度為1920
-            scale = 1920 / final_image.shape[1]
+        # Calculate scale factor based on both dimensions
+        scale = self._get_scale_factor(final_image.shape[1], final_image.shape[0])
+        
+        # Only resize if the image is too large
+        if scale < 1:
             final_image = cv2.resize(final_image, None, fx=scale, fy=scale)
 
         # Show the result
         cv2.imshow("Stereo Disparity", final_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def keypoints_button_clicked(self):
+        """
+        Show the keypoints on the image using SIFT algorithm.
+        """
+        if self.file_path_1 is None or self.file_path_1 == '':
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please load image 1 first.")
+            return
+
+        # Read the image
+        img = cv2.imread(self.file_path_1)
+        if img is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Failed to load image.")
+            return
+
+        # 1. Convert image to grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # 2. Create SIFT detector and find keypoints
+        sift = cv2.SIFT_create()
+        keypoints, descriptors = sift.detectAndCompute(gray, None)
+
+        # 3. Draw keypoints on the image
+        img_with_keypoints = cv2.drawKeypoints(gray, keypoints, None, color=(0,255,0))
+
+        # Create title bar
+        title_height = 50
+        title_image = np.zeros((title_height, img.shape[1], 3), dtype=np.uint8)
+        
+        # Add title
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(title_image, "Keypoints", (img.shape[1]//3, 35), font, 1.5, (255,255,255), 2)
+        
+        # Combine title and image
+        final_image = np.vstack((title_image, img_with_keypoints))
+
+        # Calculate scale factor based on final image width and height
+        scale = self._get_scale_factor(final_image.shape[1], final_image.shape[0])
+        final_image = cv2.resize(final_image, None, fx=scale, fy=scale)
+
+        # 4. Show the result
+        cv2.imshow("SIFT Keypoints", final_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        # Print number of keypoints found
+        print(f"Number of keypoints detected: {len(keypoints)}")
