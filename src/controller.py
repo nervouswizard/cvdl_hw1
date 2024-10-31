@@ -48,6 +48,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.show_words_vertical_button.clicked.connect(self.show_words_vertical_button_clicked)
         self.ui.stereo_disparity_map_button.clicked.connect(self.stereo_disparity_map_button_clicked)
         self.ui.keypoints_button.clicked.connect(self.keypoints_button_clicked)
+        self.ui.matched_keypoints_button.clicked.connect(self.matched_keypoints_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -505,10 +506,10 @@ class MainWindow_controller(QtWidgets.QMainWindow):
 
         # 2. Create SIFT detector and find keypoints
         sift = cv2.SIFT_create()
-        keypoints, descriptors = sift.detectAndCompute(gray, None)
+        self.keypoints_1, self.descriptors_1 = sift.detectAndCompute(gray, None)
 
         # 3. Draw keypoints on the image
-        img_with_keypoints = cv2.drawKeypoints(gray, keypoints, None, color=(0,255,0))
+        img_with_keypoints = cv2.drawKeypoints(gray, self.keypoints_1, None, color=(0,255,0))
 
         # Create title bar
         title_height = 50
@@ -531,4 +532,53 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         cv2.destroyAllWindows()
 
         # Print number of keypoints found
-        print(f"Number of keypoints detected: {len(keypoints)}")
+        print(f"Number of keypoints detected: {len(self.keypoints_1)}")
+
+    def matched_keypoints_button_clicked(self):
+        """
+        Show the matched keypoints between two images using SIFT algorithm.
+        """
+        if self.file_path_1 is None or self.file_path_2 is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please load both images first.")
+            return
+
+        # Read both images
+        img1 = cv2.imread(self.file_path_1)
+        img2 = cv2.imread(self.file_path_2)
+        if img1 is None or img2 is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Failed to load images.")
+            return
+
+        # Convert images to grayscale
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+        # Create SIFT detector and find keypoints/descriptors for both images
+        sift = cv2.SIFT_create()
+        self.keypoints_2, self.descriptors_2 = sift.detectAndCompute(gray2, None)
+
+        # Create BF Matcher and match descriptors
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(self.descriptors_1, self.descriptors_2, k=2)
+
+        # Apply ratio test to find good matches
+        good_matches = []
+        for m, n in matches:
+            if m.distance < 0.75 * n.distance:
+                good_matches.append([m])  # Wrap each match in a list for drawMatchesKnn
+
+        # Draw matches
+        img_matches = cv2.drawMatchesKnn(gray1, self.keypoints_1, gray2, self.keypoints_2, good_matches,
+                                        None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        
+        # Calculate scale factor and resize if needed
+        scale = self._get_scale_factor(img_matches.shape[1], img_matches.shape[0])
+        img_matches = cv2.resize(img_matches, None, fx=scale, fy=scale)
+
+        # Show the result
+        cv2.imshow("Matched Keypoints", img_matches)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        # Print number of matches found
+        print(f"Number of matches found: {len(good_matches)}")
