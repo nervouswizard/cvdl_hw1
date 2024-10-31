@@ -33,6 +33,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.find_extrinsic_button.clicked.connect(self.find_extrinsic_button_clicked)
         self.ui.find_distortion_button.clicked.connect(self.find_distortion_button_clicked)
         self.ui.show_result_button.clicked.connect(self.show_result_button_clicked)
+        self.ui.show_words_on_borad_button.clicked.connect(self.show_words_on_borad_button_clicked)
+        self.ui.show_words_vertical_button.clicked.connect(self.show_words_vertical_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -203,3 +205,10 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         cv2.imshow("Camera Calibration Result", final_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def show_words_on_borad_button_clicked(self):
+        
+        pass
+
+    def show_words_vertical_button_clicked(self):
+        pass

@@ -84,7 +84,11 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QSpinBox" name="find_extrinsic_spinBox"/>
+         <widget class="QSpinBox" name="find_extrinsic_spinBox">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="find_extrinsic_button">
@@ -125,6 +129,13 @@
      <string>2. Augment Reality</string>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <widget class="QLineEdit" name="word_lineEdit">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="show_words_on_borad_button">
        <property name="text">
