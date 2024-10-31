@@ -15,11 +15,11 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.set_parameters()
     
     def set_parameters(self):
-        self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q2_Image'
-        self.file_path_l = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imL.png'
-        self.file_path_r = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imR.png'
-        self.file_path_1 = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q4_Image/Left.jpg'
-        self.file_path_2 = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q4_Image/Right.jpg'
+        self.folder_path = ''
+        self.file_path_l = ''
+        self.file_path_r = ''
+        self.file_path_1 = ''
+        self.file_path_2 = ''
         self.corners = []
         self.h = None
         self.w = None
@@ -98,6 +98,18 @@ class MainWindow_controller(QtWidgets.QMainWindow):
 
         self.corners.append(corner)
         return ret, corner
+    
+    def _get_scale_factor(self, image_width, image_height):
+        """
+        Calculate the scale factor based on both screen width and height.
+        Ensures the image will fit on screen with some margin.
+        """
+        margin = 0.9  # Use 90% of screen size
+        width_scale = (self.screen_width * margin) / image_width
+        height_scale = (self.screen_height * margin) / image_height
+        
+        # Use the smaller scale factor to ensure image fits both dimensions
+        return min(width_scale, height_scale)
 
     def find_corners_button_clicked(self):
         """
@@ -131,9 +143,6 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             cv2.imshow("show_image", show_image)
             # wait for 1 second
             cv2.waitKey(1000)
-        
-        # cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
     def find_intrinsic_button_clicked(self):
         """
@@ -202,20 +211,6 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         print("Distortion:")
         print(self.dist)
-        pass
-
-    def _get_scale_factor(self, image_width, image_height):
-        """
-        Calculate the scale factor based on both screen width and height.
-        Ensures the image will fit on screen with some margin.
-        """
-        print(self.screen_width, self.screen_height)
-        margin = 0.9  # Use 90% of screen size
-        width_scale = (self.screen_width * margin) / image_width
-        height_scale = (self.screen_height * margin) / image_height
-        
-        # Use the smaller scale factor to ensure image fits both dimensions
-        return min(width_scale, height_scale)
 
     def show_result_button_clicked(self):
         """
