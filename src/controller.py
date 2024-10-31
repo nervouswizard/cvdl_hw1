@@ -15,7 +15,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.set_parameters()
     
     def set_parameters(self):
-        self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q1_Image'
+        self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q2_Image'
         self.corners = []
         self.h = None
         self.w = None
@@ -80,13 +80,16 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         if self.folder_path is None or self.folder_path == "":
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select a folder first.")
             return
-        
-        # create a window to show the images
-        cv2.namedWindow("show_image", cv2.WINDOW_NORMAL)
+
+        # filelist is a list of .bmp files in the folder
+        filelist = [file for file in os.listdir(self.folder_path) if file.endswith(".bmp")]
+
+        # reset the corners
+        self.corners = []
 
         # read every .bmp file in the folder
-        for index in range(1, len(os.listdir(self.folder_path))+1):
-            file_path = os.path.join(self.folder_path, f"{index}.bmp")
+        for index, file in enumerate(filelist):
+            file_path = os.path.join(self.folder_path, file)
             print(file_path)
             image = cv2.imread(file_path)
 
@@ -99,7 +102,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             
             cv2.imshow("show_image", show_image)
             # wait for 1 second
-            cv2.waitKey(1000)
+            # cv2.waitKey(1000)
         
         # cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -177,6 +180,13 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         Show the result of the camera calibration.
         """
+        if self.dist is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the intrinsic first.")
+            return
+        if self.index is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a valid image index.")
+            return
+
         # reload the image
         image_path = os.path.join(self.folder_path, f"{self.index}.bmp")
         image = cv2.imread(image_path)
@@ -206,9 +216,110 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def show_words_on_borad_button_clicked(self):
+    def _prepare_words_on_board(self):
+        """
+        Prepare the words on the board.
+        """
+        # get the words from UI.word_lineEdit
+        words = self.ui.word_lineEdit.text()
+
+        # if the words is empty, or the words is longer than 6 characters, or the words contains non-uppercase characters, return None
+        if words == "" or len(words) > 6 or not words.isupper():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please enter a valid word.")
+            return None
         
-        pass
+        # if self.inst, self.dist, self.rvecs, self.tvecs is None, return None
+        if self.inst is None or self.dist is None or self.rvecs is None or self.tvecs is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please find the intrinsic first.")
+            return None
+        
+        return words
+
+    def show_words_on_borad_button_clicked(self):
+        """
+        Show the words on the board.
+        """
+        words = self._prepare_words_on_board()
+        if words is None:
+            return
+        
+        # Get the alphabet database
+        fs = cv2.FileStorage(os.path.join(self.folder_path, "Q2_db", "alphabet_db_onboard.txt"), cv2.FILE_STORAGE_READ)
+        if not fs.isOpened():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Cannot open alphabet database file.")
+            return
+        
+        # Get the points of all characters
+        all_points = []
+        all_segments = []
+        segment_count = 0
+        
+        # The right down corner on the board of each character
+        right_down_corner = [(7,5,0), (4,5,0), (1,5,0), (7,2,0), (4,2,0), (1,2,0)]
+
+        for i, char in enumerate(words):
+            # Get the points of the character from the database
+            char_points = fs.getNode(char).mat()
+            if char_points is None:
+                QtWidgets.QMessageBox.warning(self, "Warning", f"Cannot find points for character {char}")
+                return
+                
+            # Ensure the points are float32 type and add the offset
+            char_points = char_points.astype(np.float32)
+            offset = np.array(right_down_corner[i], dtype=np.float32)
+            
+            # Process each segment
+            for segment in char_points:
+                # Add offset to both points in the segment
+                start_point = segment[0] + offset
+                end_point = segment[1] + offset
+                
+                all_points.append([start_point, end_point])
+                all_segments.append((segment_count, segment_count + 1))
+                segment_count += 2
+        
+        # Convert to the correct shape (N,1,3)
+        objpoints = np.array(all_points, dtype=np.float32).reshape(-1, 1, 3)
+        
+        
+        # Draw the projected points on all images in the folder
+        for index in range(1, len(self.corners)+1):
+            # Project the points to the image plane
+            points_2d, _ = cv2.projectPoints(objpoints, 
+                                            self.rvecs[index-1], 
+                                            self.tvecs[index-1], 
+                                            self.inst, 
+                                            self.dist)
+            
+            image = cv2.imread(os.path.join(self.folder_path, f"{index}.bmp"))
+            
+            # Draw each segment
+            for start_idx, end_idx in all_segments:
+                pt1 = tuple(map(int, points_2d[start_idx][0]))
+                pt2 = tuple(map(int, points_2d[end_idx][0]))
+                cv2.line(image, pt1, pt2, (0, 0, 255), 20)
+
+            # resize the image
+            image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
+
+            cv2.imshow("Words on Board", image)
+            cv2.waitKey(1000)
+        
+        cv2.destroyAllWindows()
 
     def show_words_vertical_button_clicked(self):
+        """
+        Show the words vertically.
+        """
+        words = self._prepare_words_on_board()
+        if words is None:
+            return
+        
+        # Get the alphabet database
+        fs = cv2.FileStorage(os.path.join(self.folder_path, "Q2_db", "alphabet_db_vertical.txt"), cv2.FILE_STORAGE_READ)
+        if not fs.isOpened():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Cannot open alphabet database file.")
+            return
+        
+        
         pass
