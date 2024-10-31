@@ -16,6 +16,8 @@ class MainWindow_controller(QtWidgets.QMainWindow):
     
     def set_parameters(self):
         self.folder_path = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q2_Image'
+        self.file_path_l = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imL.png'
+        self.file_path_r = 'C:/Users/sean/Desktop/cvdl_hw1/resources/Dataset_CvDl_Hw1/Q3_Image/imR.png'
         self.corners = []
         self.h = None
         self.w = None
@@ -35,6 +37,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         self.ui.show_result_button.clicked.connect(self.show_result_button_clicked)
         self.ui.show_words_on_borad_button.clicked.connect(self.show_words_on_borad_button_clicked)
         self.ui.show_words_vertical_button.clicked.connect(self.show_words_vertical_button_clicked)
+        self.ui.stereo_disparity_map_button.clicked.connect(self.stereo_disparity_map_button_clicked)
 
     def load_folder_button_clicked(self):
         """
@@ -47,16 +50,16 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         """
         Use QFileDialog to open a file selection dialog and get the selected file path.
         """
-        file_path, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a left image", self.folder_path, "Image files (*.bmp)")
-        print(file_path)
+        self.file_path_l, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a left image", "", "Image files (*.png)")
+        print(self.file_path_l)
         pass
 
     def load_image_r_button_clicked(self):
         """
         Use QFileDialog to open a file selection dialog and get the selected file path.
         """
-        file_path, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a right image", self.folder_path, "Image files (*.bmp)")
-        print(file_path)
+        self.file_path_r, extention = QtWidgets.QFileDialog.getOpenFileName(self, "Select a right image", "", "Image files (*.png)")
+        print(self.file_path_r)
         pass
 
     def _find_corners(self, image):
@@ -328,7 +331,7 @@ class MainWindow_controller(QtWidgets.QMainWindow):
         
         # The right down corner on the board of each character
         right_down_corner = [(7,5,0), (4,5,0), (1,5,0), (7,2,0), (4,2,0), (1,2,0)]
-        
+
         for i, char in enumerate(words):
             # Get the points of the character from the database
             char_points = fs.getNode(char).mat()
@@ -378,5 +381,62 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             cv2.waitKey(1000)
         
         cv2.destroyAllWindows()
+    
+    def stereo_disparity_map_button_clicked(self):
+        """
+        Show the stereo disparity map using OpenCV StereoBM.
+        """
+        if self.file_path_l is None or self.file_path_l == '' or self.file_path_r is None or self.file_path_r == '':
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please load both left and right images first.")
+            return
+
+        # Read the stereo images
+        imgL = cv2.imread(self.file_path_l)
+        imgR = cv2.imread(self.file_path_r)
+
+        if imgL is None or imgR is None:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Failed to load images.")
+            return
+
+        # Convert to grayscale for disparity calculation
+        grayL = cv2.cvtColor(imgL, cv2.COLOR_BGR2GRAY)
+        grayR = cv2.cvtColor(imgR, cv2.COLOR_BGR2GRAY)
+
+        # Create StereoBM object
+        stereo = cv2.StereoBM.create(numDisparities=432, blockSize=25)
+
+        # Compute disparity map
+        disparity = stereo.compute(grayL, grayR)
+
+        # Normalize the disparity map to [0, 255]
+        disparity_normalized = cv2.normalize(disparity, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         
-        pass
+        # Convert disparity map to BGR for display (keeping it grayscale)
+        disparity_display = cv2.cvtColor(disparity_normalized, cv2.COLOR_GRAY2BGR)
+
+        # Create title bar
+        title_height = 50
+        combined_width = imgL.shape[1] * 3  # Width for three images
+        title_image = np.zeros((title_height, combined_width, 3), dtype=np.uint8)
+        
+        # Add titles
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(title_image, "Left Image", (imgL.shape[1]//4, 35), font, 1.5, (255,255,255), 2)
+        cv2.putText(title_image, "Right Image", (imgL.shape[1] + imgL.shape[1]//4, 35), font, 1.5, (255,255,255), 2)
+        cv2.putText(title_image, "Disparity Map", (2*imgL.shape[1] + imgL.shape[1]//4, 35), font, 1.5, (255,255,255), 2)
+        
+        # Combine images horizontally
+        combined_images = np.hstack((imgL, imgR, disparity_display))
+        
+        # Combine with title
+        final_image = np.vstack((title_image, combined_images))
+
+        # Resize if the image is too large
+        if final_image.shape[1] > 1920:  # 假設螢幕寬度為1920
+            scale = 1920 / final_image.shape[1]
+            final_image = cv2.resize(final_image, None, fx=scale, fy=scale)
+
+        # Show the result
+        cv2.imshow("Stereo Disparity", final_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
