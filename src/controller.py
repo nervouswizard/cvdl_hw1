@@ -321,5 +321,62 @@ class MainWindow_controller(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Warning", "Cannot open alphabet database file.")
             return
         
+        # Get the points of all characters
+        all_points = []
+        all_segments = []
+        segment_count = 0
+        
+        # The right down corner on the board of each character
+        right_down_corner = [(7,5,0), (4,5,0), (1,5,0), (7,2,0), (4,2,0), (1,2,0)]
+        
+        for i, char in enumerate(words):
+            # Get the points of the character from the database
+            char_points = fs.getNode(char).mat()
+            if char_points is None:
+                QtWidgets.QMessageBox.warning(self, "Warning", f"Cannot find points for character {char}")
+                return
+                
+            # Ensure the points are float32 type and add the offset
+            char_points = char_points.astype(np.float32)
+            offset = np.array(right_down_corner[i], dtype=np.float32)
+            
+            # Process each segment
+            for segment in char_points:
+                # Add offset to both points in the segment
+                start_point = segment[0] + offset
+                end_point = segment[1] + offset
+                
+                all_points.append([start_point, end_point])
+                all_segments.append((segment_count, segment_count + 1))
+                segment_count += 2
+        
+        # Convert to the correct shape (N,1,3)
+        objpoints = np.array(all_points, dtype=np.float32).reshape(-1, 1, 3)
+        
+        
+        # Draw the projected points on all images in the folder
+        for index in range(1, len(self.corners)+1):
+            # Project the points to the image plane
+            points_2d, _ = cv2.projectPoints(objpoints, 
+                                            self.rvecs[index-1], 
+                                            self.tvecs[index-1], 
+                                            self.inst, 
+                                            self.dist)
+            
+            image = cv2.imread(os.path.join(self.folder_path, f"{index}.bmp"))
+            
+            # Draw each segment
+            for start_idx, end_idx in all_segments:
+                pt1 = tuple(map(int, points_2d[start_idx][0]))
+                pt2 = tuple(map(int, points_2d[end_idx][0]))
+                cv2.line(image, pt1, pt2, (0, 0, 255), 20)
+
+            # resize the image
+            image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
+
+            cv2.imshow("Words on Board", image)
+            cv2.waitKey(1000)
+        
+        cv2.destroyAllWindows()
         
         pass
